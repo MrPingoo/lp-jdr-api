@@ -82,7 +82,7 @@ MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
 #### 1. Construire et démarrer les conteneurs
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 Cette commande va :
@@ -94,26 +94,26 @@ Cette commande va :
 #### 2. Installer les dépendances PHP
 
 ```bash
-docker-compose exec php composer install
+docker compose exec php composer install
 ```
 
 #### 3. Créer la base de données
 
 ```bash
-docker-compose exec php php bin/console doctrine:database:create
+docker compose exec php php bin/console doctrine:database:create
 ```
 
 #### 4. Exécuter les migrations
 
 ```bash
-docker-compose exec php php bin/console doctrine:migrations:migrate
+docker compose exec php php bin/console doctrine:migrations:migrate
 ```
 
 #### 5. Installer les assets
 
 ```bash
-docker-compose exec php php bin/console asset-map:compile
-docker-compose exec php php bin/console importmap:install
+docker compose exec php php bin/console asset-map:compile
+docker compose exec php php bin/console importmap:install
 ```
 ---
 
@@ -127,10 +127,10 @@ Pour vérifier que tout fonctionne :
 
 ```bash
 # Vérifier le statut des conteneurs
-docker-compose ps
+docker compose ps
 
 # Voir les logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ---
@@ -142,7 +142,7 @@ docker-compose logs -f
 #### Avec Docker :
 
 ```bash
-docker-compose exec php php bin/console lexik:jwt:generate-keypair
+docker compose exec php php bin/console lexik:jwt:generate-keypair
 ```
 
 #### Sans Docker :
@@ -169,8 +169,8 @@ JWT_PASSPHRASE=VotrePassphraseSecurisee
 
 ```bash
 # Avec Docker
-docker-compose exec php chmod 644 config/jwt/private.pem
-docker-compose exec php chmod 644 config/jwt/public.pem
+docker compose exec php chmod 644 config/jwt/private.pem
+docker compose exec php chmod 644 config/jwt/public.pem
 
 # Sans Docker
 chmod 644 config/jwt/private.pem
@@ -184,7 +184,7 @@ chmod 644 config/jwt/public.pem
 ### Gestion de la base de données
 
 ```bash
-# Avec Docker (ajouter 'docker-compose exec php' avant chaque commande)
+# Avec Docker (ajouter 'docker compose exec php' avant chaque commande)
 
 # Créer la base de données
 php bin/console doctrine:database:create
@@ -262,7 +262,7 @@ php bin/console debug:event-dispatcher
 
 ```bash
 # Avec Docker
-docker-compose exec php php bin/phpunit
+docker compose exec php php bin/phpunit
 
 # Sans Docker
 php bin/phpunit
@@ -302,8 +302,8 @@ lsof -i :5432
 **Solution 2 :** Reconstruire les conteneurs
 
 ```bash
-docker-compose down -v
-docker-compose up -d --build --force-recreate
+docker compose down -v
+docker compose up -d --build --force-recreate
 ```
 
 ### Problème : Erreur de connexion à la base de données
@@ -326,8 +326,8 @@ DATABASE_URL="postgresql://app:!ChangeMe!@127.0.0.1:5432/app"
 
 ```bash
 # Avec Docker
-docker-compose exec php chown -R www-data:www-data config/jwt
-docker-compose exec php chmod -R 644 config/jwt/*.pem
+docker compose exec php chown -R www-data:www-data config/jwt
+docker compose exec php chmod -R 644 config/jwt/*.pem
 
 # Sans Docker
 sudo chown -R $USER:$USER config/jwt
@@ -340,8 +340,8 @@ chmod -R 644 config/jwt/*.pem
 
 ```bash
 # Avec Docker
-docker-compose logs -f php
-docker-compose logs -f nginx
+docker compose logs -f php
+docker compose logs -f nginx
 
 # Sans Docker (ou avec Docker)
 tail -f var/log/dev.log
