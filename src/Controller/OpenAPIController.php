@@ -19,7 +19,7 @@ class OpenAPIController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        if (empty($data['info'])) {
+        if (empty($data['message'])) {
             return $this->json(['error' => 'Les champs info est requis.'], 400);
         }
 
@@ -37,7 +37,7 @@ class OpenAPIController extends AbstractController
                     ],
                     [
                         'role' => 'user',
-                        'content' => $data['info'],
+                        'content' => $data['message'],
                     ],
                 ],
             ],
