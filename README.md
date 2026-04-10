@@ -8,8 +8,10 @@
 4. [Démarrage](#démarrage)
 5. [Commandes utiles](#commandes-utiles)
 6. [Authentification JWT](#authentification-jwt)
-7. [Tests](#tests)
-8. [Dépannage](#dépannage)
+7. [Endpoints de l'API](#endpoints-de-lapi)
+8. [Tests](#tests)
+9. [Dépannage](#dépannage)
+10. [Changelog](#changelog)
 
 ---
 
@@ -256,6 +258,115 @@ php bin/console debug:event-dispatcher
 
 ---
 
+## 🌐 Endpoints de l'API
+
+Tous les endpoints sont préfixés par `/api`. Le frontend React appelle `http://localhost:8080/api`.
+
+### Authentification (public)
+
+| Méthode | Endpoint | Description | Corps |
+|---------|----------|-------------|-------|
+| `POST` | `/api/login_check` | Connexion — retourne un JWT | `{ "email": "...", "password": "..." }` |
+| `POST` | `/api/register` | Inscription | `{ "email": "...", "password": "...", "username": "..." }` |
+
+**Réponse login :**
+```json
+{ "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..." }
+```
+
+---
+
+### Personnages (JWT requis)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/api/characters` | Liste les personnages de l'utilisateur connecté |
+| `GET` | `/api/characters/{id}` | Détail d'un personnage |
+| `POST` | `/api/characters` | Crée un personnage |
+| `DELETE` | `/api/characters/{id}` | Supprime un personnage |
+
+**Corps de création :**
+```json
+{
+  "firstName": "Aragorn",
+  "lastName": "Elessar",
+  "class": "Guerrier",
+  "race": "Humain",
+  "strength": 16,
+  "dexterity": 12,
+  "constitution": 14,
+  "intelligence": 10,
+  "wisdom": 11,
+  "charisma": 13
+}
+```
+
+**Réponse :**
+```json
+{
+  "id": 1,
+  "firstName": "Aragorn",
+  "lastName": "Elessar",
+  "class": "Guerrier",
+  "race": "Humain",
+  "strength": 16,
+  "dexterity": 12,
+  "constitution": 14,
+  "intelligence": 10,
+  "wisdom": 11,
+  "charisma": 13
+}
+```
+
+---
+
+### Parties (JWT requis)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `POST` | `/api/games` | Démarre une nouvelle partie |
+| `POST` | `/api/games/{id}/message` | Envoie un message au maître du jeu (IA) |
+| `POST` | `/api/games/{id}/roll` | Lance un dé |
+
+**Démarrer une partie :**
+```json
+// Corps
+{ "characterId": 1 }
+
+// Réponse
+{ "id": 42, "introduction": "Bienvenue, Aragorn Elessar ! Vous êtes un(e) Guerrier Humain..." }
+```
+
+**Envoyer un message :**
+```json
+// Corps
+{ "message": "J'avance prudemment vers la porte." }
+
+// Réponse
+{ "response": "Vous approchez de la porte massive en chêne renforcé de fer..." }
+```
+
+**Lancer un dé :**
+```json
+// Corps
+{ "diceType": 20 }
+
+// Réponse
+{ "result": 17, "diceType": 20 }
+```
+
+---
+
+### Variable d'environnement requise — OpenAI
+
+Le endpoint `/api/games/{id}/message` utilise l'API OpenAI (modèle `gpt-4o`). Ajoutez la clé dans `.env.local` :
+
+```dotenv
+OPENAI_API_KEY=sk-proj-...
+```
+
+---
+
 ## 🧪 Tests
 
 ### Exécuter tous les tests
@@ -453,6 +564,51 @@ Pour toute question ou problème, veuillez contacter l'équipe de développement
 **Version de Symfony :** 7.4  
 **Version de PHP :** 8.2+  
 **Version de API Platform :** 4.2+
+
+---
+
+## 📜 Changelog
+
+### v1.1.0 — 2026-04-10
+
+#### Nouveaux endpoints
+
+- **`POST /api/register`** — Inscription d'un nouvel utilisateur. Accepte `email`, `password` et `username` (mappé sur le champ `name` de l'entité `User`). Route publique (pas de JWT requis).
+- **`GET /api/characters`** — Liste les personnages appartenant à l'utilisateur authentifié.
+- **`GET /api/characters/{id}`** — Retourne le détail d'un personnage (vérifie que le personnage appartient bien à l'utilisateur).
+- **`POST /api/characters`** — Crée un personnage lié à l'utilisateur connecté.
+- **`DELETE /api/characters/{id}`** — Supprime un personnage (vérifie le propriétaire).
+- **`POST /api/games`** — Démarre une nouvelle partie pour un personnage donné. Génère une introduction narrative et persiste l'historique en base.
+- **`POST /api/games/{id}/message`** — Envoie un message au maître du jeu. Appelle l'API OpenAI (`gpt-4o`) avec le contexte du personnage et l'historique complet de la partie. Sauvegarde la réponse dans l'historique.
+- **`POST /api/games/{id}/roll`** — Lance un dé de `diceType` faces (défaut : d20). Retourne le résultat.
+
+#### Nouvelles entités
+
+- **`Character`** — Personnage joueur avec `firstName`, `lastName`, `class`, `race` et les 6 statistiques D&D (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`). Lié à un `User` par une relation `ManyToOne`.
+- **`Game`** — Partie en cours. Liée à un `Character`, stocke le statut (`active`/`ended`) et l'historique des messages en JSON.
+
+#### Migration à exécuter
+
+```bash
+docker compose exec php php bin/console doctrine:migrations:migrate
+```
+
+La migration `Version20260410140000` crée les tables `character` et `game` avec leurs clés étrangères.
+
+#### Modifications de configuration
+
+- **`security.yaml`** — Le `json_login` est configuré avec `username_path: email` pour que le champ `email` du JSON soit utilisé à la place du champ `username` par défaut de Symfony.
+- **`security.yaml`** — La route publique est désormais `^/api/login_check` (au lieu de `^/api/login`).
+
+#### Modification du frontend React
+
+Le fichier `react/src/services/api.js` a été mis à jour en conséquence :
+
+| Avant | Après |
+|-------|-------|
+| `baseURL: 'http://localhost:8080'` | `baseURL: 'http://localhost:8080/api'` |
+| `POST /login` | `POST /login_check` |
+| `POST /chat` | `POST /games/${gameId}/message` |
 
 ---
 
